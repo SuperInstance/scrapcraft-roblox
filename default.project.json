@@ -24,10 +24,7 @@
         "FilteringEnabled": true
       },
       "Scrapcraft": {
-        "$className": "Folder",
-        "$properties": {
-          "Name": "Scrapcraft"
-        }
+        "$className": "Folder"
       }
     },
     "Lighting": {

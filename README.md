@@ -9,7 +9,8 @@ every tuning number in this repo is extracted from the original source, never gu
 
 **Stack split:** Roblox Studio runs Windows-side; `rojo` runs in WSL (Ubuntu).
 WSL2 forwards `localhost` both ways, so Studio connects to WSL-served rojo with
-zero extra setup.
+zero extra setup. (Verified: Rojo 7.5.1 at `~/.cargo/bin/rojo`; `rojo serve`
+listens on `localhost:34872`.)
 
 ### 1. One-time — install the Rojo plugin in Studio
 
@@ -53,36 +54,48 @@ Studio plugin — verify the Argon plugin is installed in Studio first):
 ~/.argon/bin/argon.exe watch //wsl.localhost/ubuntu/home/eileen/projects/scrapcraft-roblox
 ```
 
-### 5. Syntax gate before commit
+### 5. Syntax gate + headless smoke tests before commit
 
 ```bash
-./tests/check-syntax.sh
+./tests/check-syntax.sh                     # luau-analyze (Roblox defs) + luac5.1 -p + JSON validation
+/usr/bin/lua5.1 tests/smoke_pass2.lua      # worldgen determinism + WorldModel
+/usr/bin/lua5.1 tests/smoke_mvp.lua        # the WHOLE MVP loop, headless
 ```
 
 - **Primary gate: `luau-analyze`** (real Luau parser, at `~/.local/bin/luau-analyze`)
   with Roblox API definitions (`tests/globalTypes.d.luau`, from luau-lsp) —
   so Luau type annotations are checked natively. Syntax errors fail the gate.
 - Secondary: `luac5.1 -p` (pure Lua 5.1 syntax) — files using Luau-only syntax
-  (annotations etc.) are expected to be unparseable by it; the count is reported
-  honestly rather than skipped silently.
+  (type annotations etc.) are expected to be unparseable by it; the count is
+  reported honestly rather than skipped silently (currently 17 of 21).
+- `tests/smoke_mvp.lua` stubs the Roblox API and drives the REAL server
+  modules under plain lua5.1 (Luau annotations stripped at load time):
+  mine → drops → inventory → craft (tool gates, all-or-nothing) → attach
+  module + Tin Brain → starter brain runs → bot moves, avoids walls, drains
+  battery at the real rates → clear → battery death. It also regression-tests
+  the level≥2 mining destroy fix (stacked parts are destroyed; the level-1
+  occupancy under them is untouched).
 - Strict-mode type *notes* (heterogeneous table inference, `script.Parent`
   requires) are printed but non-blocking in Phase 1.
-- Also validates `default.project.json` with python3.
 
 ## What's real vs stubbed (Phase 1)
 
 | System | Status |
 |---|---|
-| Mine (hold-E, hardness timing, drops, lucky finds, night bonus) | **real** — ported from `Game.js` `_updateMine`/`_completeMine` |
+| Mine (hold-E, hardness timing, drops, lucky finds, night bonus) | **real** — ported from `Game.js` `_updateMine`/`_completeMine`; level≥2 stacked blocks destroy correctly (regression-tested) |
 | Craft (stations, tool gates, ingredients, quips) | **real** — MVP chain: wrench → pliers → ultrasonic module → tin brain (+ hammer, track strips) |
-| Attach module/brain to bot | **real** — BotService pass (ProximityPrompt flow, starter brains) |
-| Bot brain (Wall Avoider, sonar, battery) | **real** — BrainVM pass (STARTER_WALL_AVOIDER port) |
+| Attach module/brain to bot | **real** — BotService (ProximityPrompt flow, Gate Edition chassis from `botEditions.js`) |
+| Bot brain (Wall Avoider, sonar, battery) | **real** — BrainVM (`VirtualRobot.js`/`TileVM.js`/`primitives.js` port; battery 0.4/1.3 %/s × 1.25 gate mult) |
 | Day/night (360 s cycle, lighting, lucky-find boost) | **real** — `DayNight.js` port |
 | Ground rendering | simplified — 1 slab + band tints + roads (zero mechanical loss; see PORT-ARCHITECTURE) |
 | Recipe book | subset — MVP chain + tier-1 extras (~60 recipes land Phase 2) |
 | Tile editor GUI | **stubbed** — Phase 2+; Phase 1 ships pre-built starter brains as data |
 | Save system / persistence | **stubbed** — later phase |
 | Bots 2+, personalities, ledger | **stubbed** — later phase |
+
+The full mine→craft→attach→brain→move loop is verified headless by
+`tests/smoke_mvp.lua` (see “Syntax gate + headless smoke tests” above) —
+the same service code Studio runs.
 
 ## The MVP loop (playtester walkthrough)
 
@@ -109,5 +122,6 @@ Studio plugin — verify the Argon plugin is installed in Studio first):
 ## Repo layout
 
 See [docs/PORT-ARCHITECTURE.md](docs/PORT-ARCHITECTURE.md) for the full map
-(`src/shared` data + constants, `src/server` worldgen + services, `src/client`
-UI, `tests/check-syntax.sh` gate).
+(`src/shared` data + constants, `src/server` worldgen + services (incl.
+`Systems/BrainVM.luau` + `Systems/BotService.luau`), `src/client` UI,
+`tests/` syntax gate + headless smoke suites).
