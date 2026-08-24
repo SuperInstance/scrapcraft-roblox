@@ -11,6 +11,8 @@ Net.REMOTES = {
 	Inv = "ScrapcraftInv",
 	Craft = "ScrapcraftCraft",
 	Bot = "ScrapcraftBot",
+	Brain = "ScrapcraftBrain", -- Phase 2 tile editor: open/save+run
+	Gate = "ScrapcraftGate",  -- Phase 2 Earl's gate: dialogue + queue HUD
 }
 
 -- Net.remote(name) — `name` may be a Net.REMOTES key ("Mine") or a raw

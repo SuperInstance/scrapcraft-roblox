@@ -180,6 +180,29 @@ function BotService.clearBrain(reason: string)
 	status("🛑 Brain stopped: " .. reason)
 end
 
+-- ── Phase 2: the tile editor's SAVE & RUN lands here ───────────────────────
+-- Same module→brain economy as the prompt flow (module attach, tin_brain
+-- consume OR reprogram the running brain). program is ALREADY validated by
+-- BrainEditorService (BrainDoc.validate). Returns ok, errText.
+function BotService.attachCustomBrain(player: Player, program: any, label: string): (boolean, string?)
+	if bot == nil then return false, "no bot in the yard" end
+	if not bot.module and not InventoryService.consume(player, "ultrasonic_module", 1) then
+		return false, "needs an Ultrasonic Module first (workbench)"
+	end
+	bot.module = true
+	bot.model:SetAttribute("Module", "ultrasonic")
+	if bot.runtime == nil then
+		if not InventoryService.consume(player, "tin_brain", 1) then
+			return false, "needs a Tin Brain (workbench: 2× circuit board, 4× copper wire, 3× iron scrap)"
+		end
+	end
+	bot.runtime = BrainVM.new(program, { x = bot.x, z = bot.z, heading = bot.heading })
+	bot.battery = 100
+	bot.warned = false
+	status("🧠 Brain loaded: " .. label .. " — look at it go")
+	return true, nil
+end
+
 -- Test/UI introspection.
 function BotService.getState()
 	if bot == nil then return nil end

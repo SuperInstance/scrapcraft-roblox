@@ -42,7 +42,15 @@ Recipes.LIST = {
 		station = "any", tier = 1,
 	},
 	{
+		id = "r_silly_hat",
+		output = "silly_hat", qty = 1,
+		ingredients = { scrap_candy = 3 },
+		station = "workbench", tier = 1,
+		quip = "Wrappers and sugar bolts. Wear it at the races. Earl pretends to hate it.",
+		},
+{
 		id = "r_track_strip",
+
 		output = "track_strip", qty = 8,
 		ingredients = { rubber_chunk = 2, iron_scrap = 1 },
 		station = "workbench", tier = 1,

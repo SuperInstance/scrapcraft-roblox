@@ -18,6 +18,9 @@ local DayNightService = require(script.Parent.Systems:WaitForChild("DayNightServ
 local MiningService = require(script.Parent.Systems:WaitForChild("MiningService"))
 local CraftingService = require(script.Parent.Systems:WaitForChild("CraftingService"))
 local BotService = require(script.Parent.Systems:WaitForChild("BotService"))
+local BrainEditorService = require(script.Parent.Systems:WaitForChild("BrainEditorService"))
+local GateService = require(script.Parent.Systems:WaitForChild("GateService"))
+local PlayerDataService = require(script.Parent.Systems:WaitForChild("PlayerDataService"))
 
 -- The Rojo project file already declares Workspace.Scrapcraft; create if missing.
 local folder = Workspace:FindFirstChild("Scrapcraft")
@@ -34,13 +37,20 @@ local wb = result.landmarks.workbench
 print(string.format("[scrapcraft] yard generated: %d parts, workbench @ %d,%d",
 	result.partCount, wb.x, wb.z))
 
--- Service init order: inventories first (PlayerAdded hooks), day/night
--- before mining (isNight feeds lucky-find odds), then the interactive
--- loop, and the bot last (needs the world + InventoryService).
+-- Service init order: profiles FIRST (its PlayerRemoving snapshot must run
+-- before InventoryService clears the live table; its load pushes saved
+-- inventories in), then inventories (PlayerAdded hooks), day/night before
+-- mining (isNight feeds lucky-find odds), the interactive loop, the bot,
+-- the editor + gate (which read profile state), persistence hooks last.
+PlayerDataService.init()
+BrainEditorService.setPersistence(PlayerDataService)
+GateService.setPersistence(PlayerDataService)
 InventoryService.init()
 DayNightService.init()
 MiningService.init()
 CraftingService.init()
 BotService.init(WorldModel, result.landmarks)
+BrainEditorService.init()
+GateService.init()
 
-print("[scrapcraft] MVP services up")
+print("[scrapcraft] MVP services up (phase 2: editor + gate + persistence)")

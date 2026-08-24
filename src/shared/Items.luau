@@ -29,7 +29,12 @@ Items.DEF = {
 		desc = "A tiny brain for a tiny robot." },
 
 	-- Lucky-loot entries that can appear before their craft systems exist
-	battery_pack   = { name = "Battery Pack",  icon = "🔋", stack = 8,  category = "material" },
+	-- ── Phase 2: the gate queue ──
+	scrap_candy    = { name = "Scrap Candy",   icon = "🍬", stack = 32, category = "material",
+		desc = "Earl lobs these at the line. Gaskets, sugar bolts, the occasional washer." },
+	silly_hat      = { name = "Silly Hat",      icon = "🎩", stack = 4, category = "material",
+		desc = "Crafted from candy wrappers. The only hat source in the yard." },
+
 	ir_module      = { name = "IR Module",     icon = "🔴", stack = 8,  category = "module" },
 	ldr_module     = { name = "LDR Module",    icon = "🔆", stack = 8,  category = "module" },
 	crystal_fragment = { name = "Crystal Fragment", icon = "🔮", stack = 16, category = "material" },

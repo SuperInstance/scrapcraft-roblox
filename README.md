@@ -60,6 +60,7 @@ Studio plugin — verify the Argon plugin is installed in Studio first):
 ./tests/check-syntax.sh                     # luau-analyze (Roblox defs) + luac5.1 -p + JSON validation
 /usr/bin/lua5.1 tests/smoke_pass2.lua      # worldgen determinism + WorldModel
 /usr/bin/lua5.1 tests/smoke_mvp.lua        # the WHOLE MVP loop, headless
+/usr/bin/lua5.1 tests/smoke_phase2.lua     # editor core, editor→VM run, gate queue, persistence
 ```
 
 - **Primary gate: `luau-analyze`** (real Luau parser, at `~/.local/bin/luau-analyze`)
@@ -89,13 +90,42 @@ Studio plugin — verify the Argon plugin is installed in Studio first):
 | Day/night (360 s cycle, lighting, lucky-find boost) | **real** — `DayNight.js` port |
 | Ground rendering | simplified — 1 slab + band tints + roads (zero mechanical loss; see PORT-ARCHITECTURE) |
 | Recipe book | subset — MVP chain + tier-1 extras (~60 recipes land Phase 2) |
-| Tile editor GUI | **stubbed** — Phase 2+; Phase 1 ships pre-built starter brains as data |
-| Save system / persistence | **stubbed** — later phase |
+| Tile editor GUI | **REAL (Phase 2)** — the Brain Workbench: visual tile editor at the bench (key **B**) — palette, drag/snap, click-to-wire, per-tile params, SAVE & RUN into the live BrainVM (data core proven by round-trip tests; GUI kimi-built, review-fixed) |
+| Earl's gate ceremony | **REAL (Phase 2)** — queue with numbered hard hats, Earl's canon lines, the bell (3 rings), candy every 8s to the line, doors that swing open on your answer; returning regulars skip (clack + one line). Ceremony area is escapable by determined walkers (open yard) — containment is vibes-first v1 |
+| Persistence | **REAL (Phase 2)** — `PlayerProfiles_v1` DataStore: inventory, gate state, last editor program; 180s session lease, 12s buffered flush, save-on-leave + BindToClose, pcall everywhere (Studio without API access → memory-only fallback, honest note below) |
 | Bots 2+, personalities, ledger | **stubbed** — later phase |
 
 The full mine→craft→attach→brain→move loop is verified headless by
-`tests/smoke_mvp.lua` (see “Syntax gate + headless smoke tests” above) —
-the same service code Studio runs.
+`tests/smoke_mvp.lua`; Phase 2's editor data core, gate queue, and persistence
+by `tests/smoke_phase2.lua` (51 checks — see “Syntax gate + headless smoke
+tests” above) — the same service code Studio runs.
+
+## Phase 2 — what shipped (2026-08-23, branch `phase2-build`)
+
+Three checkpoints, each test-gated:
+
+1. **The Brain Workbench (tile editor)** — open it at the workbench (**B**).
+   Build a brain from tiles (Drive/Turn/Stop/Beep/LED + Wait/If-Else/Forever),
+   wire them (cyan = next, purple = loop body, red = else), set a START tile,
+   then **SAVE & RUN ▶** — it validates, keeps the module→brain economy
+   (reprogramming a running brain is free), and your program runs on the yard
+   bot through the same BrainVM. Your last brain persists in your profile.
+   The editor edits a node graph that serializes to EXACTLY the program tree
+   `BrainVM` executes (round-trip proven) — one format from tiles to motor
+   pins, matching the web TileProgram schema.
+2. **Earl's gate with queue** — first-timers spawn south of the closed doors,
+   take a numbered hard hat, and get Earl's full greeting (canon-verbatim
+   beats; answer "I can dig" or ask about the blue drum — both paths open the
+   gate). The line gets scrap candy every 8s (→ Silly Hats at the bench),
+   the front can ring the bell three times, idle players drift back one slot
+   per 90s (the gate is patient). Returning regulars skip it all: the gate
+   just clacks open with one gruff-warm line.
+3. **Persistence v1** — profiles with a 180s session lease (60s refresh, so
+   teleports never double a kid; a crashed server releases in ≤3m), dirty
+   flush every 12s, save-on-leave, BindToClose. Failure to load = fresh
+   start at the gate, never a brick. **Honest limits:** a stuck lease from a
+   live server is overridden after 3 retries (playtest-friendly, not
+   split-brain-proof); Studio without Studio API access runs memory-only.
 
 ## The MVP loop (playtester walkthrough)
 
