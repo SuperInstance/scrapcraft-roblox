@@ -63,6 +63,7 @@ local doorL: BasePart, doorR: BasePart
 local bellPart: BasePart
 local lastCandyAt = 0
 local lastQueueToastAt = 0
+local returningGreetedAt: {[Player]: number} = {} -- per-regular cooldown (no spam while loitering)
 local doorClosedCF: any
 local doorOpenCF: any
 
@@ -406,6 +407,7 @@ end
 local function onPlayerRemoving(player: Player)
 	GateQueue.leave(queue, player)
 	greeted[player] = nil
+	returningGreetedAt[player] = nil
 	if ceremony.key == player then
 		endCeremony(false)
 		setDoors(false)
@@ -484,14 +486,17 @@ local function tick(dt: number)
 		end
 	end
 
-	-- Returning regulars: auto-clack when near the gate.
+	-- Returning regulars: auto-clack when near the gate (60s per-regular
+	-- cooldown so loitering at the arch doesn't put Earl on a loop).
 	for _, player in ipairs(Players:GetPlayers()) do
 		if hasBeenGreeted(player) and not doorsOpen then
 			local char = player.Character
 			local root = char ~= nil and char:FindFirstChild("HumanoidRootPart") or nil
 			if root ~= nil and root:IsA("BasePart") then
 				local d = (root.Position - Vector3.new(GATE_X, 0, GATE_Z)).Magnitude
-				if d < 14 then
+				local last = returningGreetedAt[player] or 0
+				if d < 14 and now - last > 60 then
+					returningGreetedAt[player] = now
 					setDoors(true)
 					toPlayer(player, { type = "earl", text = LINES.returning, forYou = true })
 					task.delay(6, function()
