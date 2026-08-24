@@ -42,6 +42,24 @@ local function sync(player: Player): ()
 	})
 end
 
+-- Phase 2 persistence: replace the live inventory from a loaded profile
+-- (sanitize + push to client). PlayerDataService calls this on join.
+function InventoryService.set(player: Player, items: {[string]: number}): ()
+	local inv = InventoryService.get(player)
+	for k in pairs(inv) do inv[k] = nil end
+	local n = 0
+	for id, count in pairs(items or {}) do
+		if type(id) == "string" and type(count) == "number" and count > 0 and n < 64 then
+			inv[id] = math.floor(count)
+			n = n + 1
+		end
+	end
+	sync(player)
+end
+
+-- Fire the inventory snapshot to its owner (public wrapper).
+InventoryService.sync = sync
+
 --- Add qty of itemId; returns the {itemId, delta} sync list for the client.
 function InventoryService.add(player: Player, itemId: string, qty: number): {{itemId: string, delta: number}}
 	local inv = InventoryService.get(player)
